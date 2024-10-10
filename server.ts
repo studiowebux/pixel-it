@@ -1,6 +1,6 @@
 // deno serve --watch server.ts
 import { Hono, type Context } from "jsr:@hono/hono@^4.6.3";
-import { Jimp } from "npm:jimp";
+import { Jimp } from "npm:jimp@^1.6.0";
 
 const app = new Hono();
 
@@ -88,7 +88,7 @@ app.post("/upload", async (c: Context) => {
   try {
     const input = await Jimp.read(await file.arrayBuffer());
     const output: string[] = [];
-    for (const i of [2, 3, 4, 5, 6, 8]) {
+    for (const i of [2, 3, 4, 5, 6, 8, 12, 24]) {
       const pixelated = await input.pixelate(i).getBase64("image/png");
       output.push(`<div>
           <h1>Pixelate Size: ${i}</h1>

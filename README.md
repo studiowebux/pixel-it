@@ -33,6 +33,13 @@ Simple tool build with Jimp to pixelate images.
 5. You will get multiple versions (2, 3, 4, 5, 6, 8 pixels)
 6. Voila !
 
+### Docker
+
+```bash
+docker build -t pixel-it .
+docker run --name pixel-it -d -p 8000:8000 pixel-it
+```
+
 ---
 
 ### Releases and Github Actions

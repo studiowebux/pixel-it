@@ -1,0 +1,20 @@
+services:
+  pixelit:
+    build: .
+    container_name: pixel-it
+    restart: unless-stopped
+    ports:
+      - 8000:8000
+    environment:
+      - VIRTUAL_HOST=pixel-it.webuxlab.com
+      - VIRTUAL_PORT=8000
+      - LETSENCRYPT_HOST=pixel-it.webuxlab.com
+    networks:
+      - proxy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  proxy:
+    name: proxy
+    external: true
