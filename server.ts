@@ -59,6 +59,15 @@ app.get("/", (c: Context) => {
                   );
               });
           </script>
+          <script>
+              function pixelitColorToggle(checkbox) {
+                  checkbox.parentElement.classList.toggle("selected", checkbox.checked);
+                  document.dispatchEvent(new CustomEvent(
+                      checkbox.checked ? "pixelit:pick" : "pixelit:unpick",
+                      { detail: { hex: checkbox.value, checkboxId: checkbox.id } }
+                  ));
+              }
+          </script>
           <link
               rel="stylesheet"
               href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
@@ -124,6 +133,11 @@ app.get("/", (c: Context) => {
               img {
                   max-width:512px;
               }
+
+              .rounded.selected {
+                  outline: 3px solid white;
+                  box-shadow: 0 0 0 5px black;
+              }
           </style>
       </head>
       <body class="container">
@@ -185,10 +199,20 @@ app.post("/upload", async (c: Context) => {
       await input.getBase64("image/png"),
       maxColors,
     );
+    const renderSwatches = (colors: {hex: string}[], prefix: string) =>
+      colors.map((color) => {
+        const id = `color-${prefix}-${color.hex.replace("#", "")}`;
+        const dark = isDarkColor(color.hex);
+        return `<label for="${id}" class="rounded ${dark ? "text-white" : "text-black"}" style="background-color:${color.hex};cursor:pointer">
+          <input type="checkbox" id="${id}" value="${color.hex}" onchange="pixelitColorToggle(this)" style="display:none" />
+          ${color.hex}
+        </label>`;
+      }).join("");
+
     output.push(`
       <h2>Original Color Palette</h2>
       <div class="original-color-palette">
-        ${originalColorPalette.map((color) => `<div class="rounded ${isDarkColor(color.hex) ? "text-white" : "text-black"}" style="background-color: ${color.hex}">${color.hex}</div>`).join("")}
+        ${renderSwatches(originalColorPalette as {hex: string}[], `orig-${file.name}`)}
       </div>
     `);
     for (const i of [2, 3, 4, 5, 6, 8, 12, 24]) {
@@ -200,7 +224,7 @@ app.post("/upload", async (c: Context) => {
           <div class="output">
             <img src="data:image/png;base64${pixelated}" alt="Pixelate Size: ${i}" />
             <div class="color-palette">
-              ${colorPalette.map((color) => `<div class="rounded ${isDarkColor(color.hex) ? "text-white" : "text-black"}" style="background-color: ${color.hex}">${color.hex}</div>`).join("")}
+              ${renderSwatches(colorPalette as {hex: string}[], `px${i}-${file.name}`)}
             </div>
           </div>
       </div>`);
