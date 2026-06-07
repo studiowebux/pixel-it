@@ -14,7 +14,7 @@ function isDarkColor(color: string): boolean {
   return brigthness < 120;
 }
 
-async function getColorPalette(image: string) {
+async function getColorPalette(image: string, maxColors: number = 64) {
   return new Promise((resolve, reject) => {
     getPixels(image, async (err, pixels) => {
       if (err) {
@@ -34,7 +34,7 @@ async function getColorPalette(image: string) {
           hueDistance: 0.083333333,
         },
       );
-      return resolve(palette);
+      return resolve((palette as unknown[]).slice(0, maxColors));
     });
   });
 }
@@ -140,6 +140,8 @@ app.get("/", (c: Context) => {
                       hx-indicator="#indicator"
                   >
                       <input type="file" name="file" />
+                      <label for="maxColors">Colors to extract (default 64)</label>
+                      <input type="number" id="maxColors" name="maxColors" min="1" placeholder="64" />
                       <button>Upload</button>
                   </form>
               </article>
@@ -170,6 +172,7 @@ app.post("/upload", async (c: Context) => {
   const body = await c.req.parseBody();
 
   const file: File | string = body["file"];
+  const maxColors = Math.max(1, parseInt(body["maxColors"] as string) || 64);
 
   if (!file || typeof file === "string") {
     return c.text("Oops, try another file", 500);
@@ -180,6 +183,7 @@ app.post("/upload", async (c: Context) => {
     const output: string[] = [];
     const originalColorPalette = await getColorPalette(
       await input.getBase64("image/png"),
+      maxColors,
     );
     output.push(`
       <h2>Original Color Palette</h2>
@@ -189,7 +193,7 @@ app.post("/upload", async (c: Context) => {
     `);
     for (const i of [2, 3, 4, 5, 6, 8, 12, 24]) {
       const pixelated = await input.pixelate(i).getBase64("image/png");
-      const colorPalette = await getColorPalette(pixelated);
+      const colorPalette = await getColorPalette(pixelated, maxColors);
       output.push(`
         <div>
           <h2 class="h2">Pixelate Size: ${i}</h2>
