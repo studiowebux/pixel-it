@@ -67,6 +67,11 @@ app.get("/", (c: Context) => {
                       { detail: { hex: checkbox.value, checkboxId: checkbox.id } }
                   ));
               }
+
+              function pixelitClearAll() {
+                  document.getElementById("images").innerHTML = "";
+                  document.dispatchEvent(new CustomEvent("pixelit:clearall"));
+              }
           </script>
           <link
               rel="stylesheet"
@@ -151,13 +156,16 @@ app.get("/", (c: Context) => {
                       hx-encoding="multipart/form-data"
                       hx-post="/upload"
                       hx-target="#images"
+                      hx-swap="beforeend"
                       hx-indicator="#indicator"
+                      hx-on::after-request="this.reset()"
                   >
-                      <input type="file" name="file" />
+                      <input type="file" name="file" required />
                       <label for="maxColors">Colors to extract (default 64)</label>
                       <input type="number" id="maxColors" name="maxColors" min="1" placeholder="64" />
                       <button>Upload</button>
                   </form>
+                  <button class="secondary" onclick="pixelitClearAll()">Clear all</button>
               </article>
 
               <div id="indicator" class="htmx-indicator">
@@ -230,10 +238,10 @@ app.post("/upload", async (c: Context) => {
       </div>`);
     }
     return c.html(
-      `<div>
+      `<section style="border-top:2px solid var(--pico-muted-border-color);margin-top:2em;padding-top:1em">
+        <h2>📁 ${file.name}</h2>
         ${output.join("\n")}
-      </div>
-    `,
+      </section>`,
     );
   } catch (e: unknown) {
     return c.html(`<p>${(e as Error).message}</p>`);
