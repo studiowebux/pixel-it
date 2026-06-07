@@ -172,7 +172,26 @@ progress::-webkit-progress-value { background: var(--primary); border-radius: 99
 }
 
 .palette-section { margin-bottom: 1.5em; }
-.palette-section h2 { margin-bottom: 0.5em; }
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    margin-bottom: 0.5em;
+}
+
+.pick-all-btn {
+    font-size: 0.75rem;
+    padding: 0.2em 0.6em;
+    color: var(--primary);
+    border-color: var(--primary);
+    background: transparent;
+}
+
+.pick-all-btn:hover {
+    background: var(--primary);
+    color: #fff;
+}
 
 .output {
     display: flex;
@@ -290,4 +309,85 @@ progress::-webkit-progress-value { background: var(--primary); border-radius: 99
 .panel-divider {
     border: none;
     border-top: 1px solid var(--border);
+}
+
+/* ── Variation settings ── */
+
+.variation-settings {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+}
+
+.variation-settings-label {
+    color: var(--text-muted);
+    flex: 1;
+}
+
+.variation-settings label {
+    color: var(--text-muted);
+}
+
+.variation-settings input[type="number"] {
+    width: 3.5em;
+    padding: 0.2em 0.4em;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--text);
+    background: var(--surface);
+}
+
+/* ── Variation swatches ── */
+
+.swatch-var {
+    font-size: 0.75rem;
+    padding: 0.1em 0.4em;
+    color: var(--text-muted);
+}
+
+.swatch-var:hover {
+    background: var(--bg);
+}
+
+.variation-container {
+    margin-bottom: 0.25em;
+}
+
+.variation-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3em;
+    padding: 0.4em 0;
+}
+
+.variation-swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: var(--radius-sm);
+    padding: 0.3em 0.4em;
+    cursor: pointer;
+    min-width: 3.5em;
+    font-family: var(--font-mono);
+    border: 2px solid transparent;
+    transition: transform 0.1s;
+}
+
+.variation-swatch:hover { transform: scale(1.06); }
+
+.variation-swatch.selected {
+    border-color: #fff;
+    outline: 2px solid var(--text);
+}
+
+.variation-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.variation-hex {
+    font-size: 0.65rem;
 }

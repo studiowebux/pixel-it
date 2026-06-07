@@ -73,7 +73,7 @@ function renderSwatches(colors: {hex: string}[], prefix: string): string {
     const id = "color-" + prefix + "-" + color.hex.replace("#", "");
     const cls = isDarkColor(color.hex) ? "text-white" : "text-black";
     return "<label for='" + id + "' class='rounded " + cls + "' style='background-color:" + color.hex + "'>"
-      + "<input type='checkbox' id='" + id + "' value='" + color.hex + "' onchange='pixelitColorToggle(this)' hidden />"
+      + "<input type='checkbox' id='" + id + "' value='" + color.hex + "' onchange='pixelitColorToggle(this,event)' hidden />"
       + color.hex
       + "</label>";
   }).join("");
@@ -93,6 +93,7 @@ app.get("/", (c: Context) => {
   <script src="/js/toggle.js"></script>
   <script src="/js/panel.js"></script>
   <script src="/js/export.js"></script>
+  <script src="/js/variations.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       htmx.on("#form", "htmx:xhr:progress", function(evt) {
@@ -125,7 +126,6 @@ app.get("/", (c: Context) => {
           <span>colors</span>
         </div>
         <button type="submit" class="primary">Upload</button>
-        <button type="button" class="muted" onclick="pixelitClearAll()">Clear all</button>
       </form>
       <div id="indicator" class="indicator">
         <progress id="progress" value="0" max="100"></progress>
@@ -143,7 +143,16 @@ app.get("/", (c: Context) => {
           <p id="palette-empty" class="panel-empty">Upload an image and click colors to add them here.</p>
         </div>
         <hr class="panel-divider" />
+        <div class="variation-settings">
+          <span class="variation-settings-label">Variations</span>
+          <label for="var-steps">Steps</label>
+          <input type="number" id="var-steps" value="4" min="1" max="12" onchange="pixelitUpdateVariationSettings()" />
+          <label for="var-degrees">Deg</label>
+          <input type="number" id="var-degrees" value="5" min="1" max="30" onchange="pixelitUpdateVariationSettings()" />
+        </div>
+        <hr class="panel-divider" />
         <button onclick="pixelitExportPNG()" class="full">Export PNG</button>
+        <button onclick="pixelitClearAll()" class="full muted">Clear all</button>
       </aside>
     </div>
   </div>
@@ -172,11 +181,15 @@ app.post("/upload", async (c: Context) => {
 
     const sortByHue = (colors: {hex: string}[]) => [...colors].sort((a, b) => hexToHue(a.hex) - hexToHue(b.hex));
 
+    const pickAllBtn = (paletteClass: string) =>
+      "<button class='pick-all-btn' onclick='pixelitPickAll(this,\"" + paletteClass + "\")'>Pick all</button>";
+
     const origPalette = await getColorPalette(await input.getBase64("image/png"), maxColors);
+    const origPrefix = "orig-" + (file as File).name;
     sections.push(
       "<div class='palette-section'>"
-      + "<h2>Original</h2>"
-      + "<div class='original-color-palette'>" + renderSwatches(sortByHue(origPalette), "orig-" + (file as File).name) + "</div>"
+      + "<div class='section-header'><h2>Original</h2>" + pickAllBtn("original-color-palette") + "</div>"
+      + "<div class='original-color-palette'>" + renderSwatches(sortByHue(origPalette), origPrefix) + "</div>"
       + "</div>"
     );
 
@@ -185,7 +198,7 @@ app.post("/upload", async (c: Context) => {
       const palette = await getColorPalette(pixelated, maxColors);
       sections.push(
         "<div class='palette-section'>"
-        + "<h2>Pixelate &times; " + size + "</h2>"
+        + "<div class='section-header'><h2>Pixelate &times; " + size + "</h2>" + pickAllBtn("color-palette") + "</div>"
         + "<div class='output'>"
         + "<img src='data:image/png;base64" + pixelated + "' alt='Pixelate x" + size + "' />"
         + "<div class='color-palette'>" + renderSwatches(sortByHue(palette), "px" + size + "-" + (file as File).name) + "</div>"
