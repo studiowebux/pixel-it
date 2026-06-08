@@ -1,214 +1,129 @@
 // deno serve -A --watch server.ts
 import { Hono, type Context } from "jsr:@hono/hono@^4.6.3";
+import { serveStatic } from "jsr:@hono/hono/deno";
+import { logger } from "jsr:@hono/hono/logger";
 import { Jimp } from "npm:jimp@^1.6.0";
 import { extractColors } from "npm:extract-colors";
 import getPixels from "npm:get-pixels";
 
 const app = new Hono();
+app.use(logger());
 
-function isDarkColor(color: string): boolean {
-  const r = parseInt(color.substr(1, 2), 16);
-  const g = parseInt(color.substr(3, 2), 16);
-  const b = parseInt(color.substr(4, 2), 16);
-  const brigthness = (r * 299 + g * 587 + b * 114) / 1000;
-  return brigthness < 120;
+// ── Static assets ──────────────────────────────────────────────────────────
+
+app.use("/", serveStatic({ path: "./index.html" }));
+app.use("/style.css", serveStatic({ root: "./" }));
+app.use("/js/*", serveStatic({ root: "./" }));
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function isDarkColor(hex: string): boolean {
+  const r = parseInt(hex.substr(1, 2), 16);
+  const g = parseInt(hex.substr(3, 2), 16);
+  const b = parseInt(hex.substr(5, 2), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 < 120;
 }
 
-async function getColorPalette(image: string) {
+async function getColorPalette(image: string, maxColors: number = 64): Promise<{hex: string}[]> {
   return new Promise((resolve, reject) => {
-    getPixels(image, async (err, pixels) => {
-      if (err) {
-        return reject(new Error(err));
-      }
+    getPixels(image, async (err: Error | null, pixels: { data: number[]; shape: number[] }) => {
+      if (err) return reject(new Error(String(err)));
       const data = [...pixels.data];
       const [width, height] = pixels.shape;
-
+      const scale = Math.max(0.02, 0.2 / Math.sqrt(maxColors / 8));
       const palette = await extractColors(
         { data, width, height },
         {
-          pixels: 64000,
-          distance: 0.1,
-          colorValidator: (red, green, blue, alpha = 255) => alpha > 250,
-          saturationDistance: 0.2,
-          lightnessDistance: 0.2,
-          hueDistance: 0.083333333,
+          pixels: Math.max(64000, width * height),
+          distance: scale,
+          colorValidator: (_r: number, _g: number, _b: number, alpha = 255) => alpha > 250,
+          saturationDistance: scale,
+          lightnessDistance: scale,
+          hueDistance: scale / 2,
         },
       );
-      return resolve(palette);
+      resolve((palette as {hex: string}[]).slice(0, maxColors));
     });
   });
 }
 
-app.get("/", (c: Context) => {
-  return c.html(`<!doctype html>
-  <html lang="en">
-      <head>
-          <meta charset="UTF-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Document</title>
-          <script
-              src="https://unpkg.com/htmx.org@2.0.2"
-              integrity="sha384-Y7hw+L/jvKeWIRRkqWYfPcvVxHzVzn5REgzbawhxAuQGwX1XWe70vji+VSeHOThJ"
-              crossorigin="anonymous"
-          ></script>
-          <script defer>
-              htmx.on("#form", "htmx:xhr:progress", function (evt) {
-                  htmx.find("#progress").setAttribute(
-                      "value",
-                      (evt.detail.loaded / evt.detail.total) * 100,
-                  );
-              });
-          </script>
-          <link
-              rel="stylesheet"
-              href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
-          />
+function hexToHue(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  if (max === min) return 0;
+  const d = max - min;
+  if (max === r) return (((g - b) / d + (g < b ? 6 : 0)) / 6) * 360;
+  if (max === g) return (((b - r) / d + 2) / 6) * 360;
+  return (((r - g) / d + 4) / 6) * 360;
+}
 
-          <style>
-              .htmx-indicator {
-                  display: none;
-              }
-              .htmx-request .htmx-indicator {
-                  display: inline;
-              }
-              .htmx-request.htmx-indicator {
-                  display: inline;
-              }
+function renderSwatches(colors: {hex: string}[], prefix: string): string {
+  return colors.map((color) => {
+    const id = "color-" + prefix + "-" + color.hex.replace("#", "");
+    const cls = isDarkColor(color.hex) ? "text-white" : "text-black";
+    return "<label for='" + id + "' class='rounded " + cls + "' style='background-color:" + color.hex + "'>"
+      + "<input type='checkbox' id='" + id + "' value='" + color.hex + "' onchange='pixelitColorToggle(this,event)' hidden />"
+      + color.hex
+      + "</label>";
+  }).join("");
+}
 
-              .h2 {
-                  margin-top:2em;
-              }
-
-              .rounded {
-                  border-radius: 25%;
-                  padding: 0.75em;
-                  font-weight: bold;
-                  flex-basis: 7em;
-                  min-width: 7em;
-                  align-content: center;
-                  text-align: center;
-              }
-
-              .original-color-palette {
-                  display: flex;
-                  gap: 0.5em;
-                  margin-top: 0.25em;
-                  flex-wrap: wrap;
-                  margin: 0 auto;
-                  justify-content: center;
-              }
-
-              .color-palette {
-                  display: flex;
-                  height: 3em;
-                  flex-wrap: wrap;
-                  gap: 0.25em;
-                  justify-content: space-evenly;
-                  margin: 0 auto;
-              }
-
-              .text-white {
-                  color: white;
-              }
-
-              .text-black {
-                  color: black;
-              }
-
-              .output {
-                  display: flex;
-                  justify-content: space-between;
-                  gap: 1em;
-              }
-
-              img {
-                  max-width:512px;
-              }
-          </style>
-      </head>
-      <body class="container">
-          <header>
-            <h1>Pixelate your images</h1>
-          </header>
-          <main>
-              <article>
-                  <form
-                      id="form"
-                      hx-encoding="multipart/form-data"
-                      hx-post="/upload"
-                      hx-target="#images"
-                      hx-indicator="#indicator"
-                  >
-                      <input type="file" name="file" />
-                      <button>Upload</button>
-                  </form>
-              </article>
-
-              <div id="indicator" class="htmx-indicator">
-                  <progress id="progress" value="0" max="100"></progress>
-                  <span aria-busy="true">Generating your images...</span>
-              </div>
-
-              <article><div id="images">...</div></article>
-          </main>
-
-          <footer>
-            <div class="grid">
-              <b>Made by Studiowebux @ 2024</b>
-              <p style="text-align: right">Powered by Deno / Hono / Jimp / extract-colors / get-pixels / PicoCSS / HTMX</p>
-            </div>
-            <div>
-              <p style="text-align: center">Use on your local machine: <a href="https://github.com/studiowebux/pixel-it">Github</a></p>
-            </div>
-          </footer>
-      </body>
-  </html>
-`);
-});
+// ── Routes ─────────────────────────────────────────────────────────────────
 
 app.post("/upload", async (c: Context) => {
   const body = await c.req.parseBody();
-
-  const file: File | string = body["file"];
+  const file = body["file"];
+  const maxColors = Math.max(1, parseInt(body["maxColors"] as string) || 64);
 
   if (!file || typeof file === "string") {
-    return c.text("Oops, try another file", 500);
+    return c.html("<p>Invalid file.</p>", 400);
   }
 
   try {
-    const input = await Jimp.read(await file.arrayBuffer());
-    const output: string[] = [];
-    const originalColorPalette = await getColorPalette(
-      await input.getBase64("image/png"),
+    const input = await Jimp.read(await (file as File).arrayBuffer());
+    const sections: string[] = [];
+
+    const sortByHue = (colors: {hex: string}[]) => [...colors].sort((a, b) => hexToHue(a.hex) - hexToHue(b.hex));
+
+    const pickAllBtn = (paletteClass: string) =>
+      "<button class='pick-all-btn' onclick='pixelitPickAll(this,\"" + paletteClass + "\")'>Pick all</button>";
+
+    const origPalette = await getColorPalette(await input.getBase64("image/png"), maxColors);
+    const origPrefix = "orig-" + (file as File).name;
+    sections.push(
+      "<div class='palette-section'>"
+      + "<div class='section-header'><h2>Original</h2>" + pickAllBtn("original-color-palette") + "</div>"
+      + "<div class='original-color-palette'>" + renderSwatches(sortByHue(origPalette), origPrefix) + "</div>"
+      + "</div>"
     );
-    output.push(`
-      <h2>Original Color Palette</h2>
-      <div class="original-color-palette">
-        ${originalColorPalette.map((color) => `<div class="rounded ${isDarkColor(color.hex) ? "text-white" : "text-black"}" style="background-color: ${color.hex}">${color.hex}</div>`).join("")}
-      </div>
-    `);
-    for (const i of [2, 3, 4, 5, 6, 8, 12, 24]) {
-      const pixelated = await input.pixelate(i).getBase64("image/png");
-      const colorPalette = await getColorPalette(pixelated);
-      output.push(`
-        <div>
-          <h2 class="h2">Pixelate Size: ${i}</h2>
-          <div class="output">
-            <img src="data:image/png;base64${pixelated}" alt="Pixelate Size: ${i}" />
-            <div class="color-palette">
-              ${colorPalette.map((color) => `<div class="rounded ${isDarkColor(color.hex) ? "text-white" : "text-black"}" style="background-color: ${color.hex}">${color.hex}</div>`).join("")}
-            </div>
-          </div>
-      </div>`);
+
+    for (const size of [2, 3, 4, 5, 6, 8, 12, 24]) {
+      const pixelated = await input.pixelate(size).getBase64("image/png");
+      const palette = await getColorPalette(pixelated, maxColors);
+      sections.push(
+        "<div class='palette-section'>"
+        + "<div class='section-header'><h2>Pixelate &times; " + size + "</h2>" + pickAllBtn("color-palette") + "</div>"
+        + "<div class='output'>"
+        + "<div class='img-wrapper'>"
+        + "<img src='data:image/png;base64" + pixelated + "' alt='Pixelate x" + size + "' />"
+        + "<canvas class='img-overlay'></canvas>"
+        + "</div>"
+        + "<div class='color-palette'>" + renderSwatches(sortByHue(palette), "px" + size + "-" + (file as File).name) + "</div>"
+        + "</div>"
+        + "</div>"
+      );
     }
+
     return c.html(
-      `<div>
-        ${output.join("\n")}
-      </div>
-    `,
+      "<div class='upload-section'>"
+      + "<div class='upload-section-title'>" + (file as File).name + "</div>"
+      + sections.join("")
+      + "</div>"
     );
   } catch (e: unknown) {
-    return c.html(`<p>${(e as Error).message}</p>`);
+    return c.html("<p>" + (e as Error).message + "</p>", 500);
   }
 });
 
