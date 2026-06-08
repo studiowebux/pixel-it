@@ -231,6 +231,14 @@ progress::-webkit-progress-value { background: var(--primary); border-radius: 99
 
 .rounded:hover { transform: scale(1.06); }
 
+.rounded.palette-highlight {
+    transform: scale(1.12);
+    outline: 3px solid var(--text);
+    box-shadow: 0 0 0 5px rgba(0,0,0,0.15);
+    z-index: 1;
+    position: relative;
+}
+
 .rounded.selected {
     border-color: #fff;
     outline: 2px solid var(--text);

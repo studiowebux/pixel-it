@@ -62,6 +62,20 @@ function renderPanel() {
     saveToStorage();
 }
 
+function pixelitHighlightColor(hex) {
+    var labels = document.querySelectorAll("input[type='checkbox'][value='" + hex + "']");
+    for (var i = 0; i < labels.length; i++) {
+        labels[i].parentElement.classList.add("palette-highlight");
+    }
+}
+
+function pixelitUnhighlightColor() {
+    var labels = document.querySelectorAll(".palette-highlight");
+    for (var i = 0; i < labels.length; i++) {
+        labels[i].classList.remove("palette-highlight");
+    }
+}
+
 function pixelitToggleVariations(hex, varId) {
     if (openVariations.has(varId)) {
         openVariations.delete(varId);

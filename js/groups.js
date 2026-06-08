@@ -192,7 +192,7 @@ function renderGroupSection(title, colors, groupId) {
         ? "<div class='group-section-empty'>No colors yet.</div>"
         : sorted.map(function(item) {
             var varId = "var-" + item.hex.replace("#", "");
-            return "<div class='panel-swatch'>"
+            return "<div class='panel-swatch' onmouseenter='pixelitHighlightColor(\"" + item.hex + "\")' onmouseleave='pixelitUnhighlightColor()'>"
                 + "<div class='swatch-dot' style='background:" + item.hex + "'></div>"
                 + "<span class='swatch-hex'>" + item.hex + "</span>"
                 + buildMoveSelect(item.hex)
