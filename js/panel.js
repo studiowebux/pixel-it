@@ -41,23 +41,13 @@ function renderPanel() {
         return hexToHsl(a.hex) - hexToHsl(b.hex);
     });
 
-    var empty = document.getElementById("palette-empty");
-    if (empty) empty.style.display = sorted.length === 0 ? "block" : "none";
-
     var list = document.getElementById("palette-list");
-    var html = "";
-    for (var i = 0; i < sorted.length; i++) {
-        var item = sorted[i];
-        var varId = "var-" + item.hex.replace("#", "");
-        html += "<div class='panel-swatch'>"
-            + "<div class='swatch-dot' style='background:" + item.hex + "'></div>"
-            + "<span class='swatch-hex'>" + item.hex + "</span>"
-            + "<button class='swatch-var' onclick='pixelitToggleVariations(\"" + item.hex + "\",\"" + varId + "\")' title='HUE variations'>~</button>"
-            + "<button class='swatch-remove' onclick='pixelitRemove(\"" + item.hex + "\",\"" + item.checkboxId + "\")'>x</button>"
-            + "</div>"
-            + "<div id='" + varId + "' class='variation-container'></div>";
+    var hasGroups = typeof groups !== "undefined" && groups.length > 0;
+    if (sorted.length === 0 && !hasGroups) {
+        list.innerHTML = "<p class='panel-empty'>Upload an image and click colors to add them here.</p>";
+    } else {
+        list.innerHTML = renderGroupedPanel(sorted);
     }
-    list.innerHTML = html;
 
     // Re-open any variation panels that were open before rebuild
     openVariations.forEach(function(varId) {
@@ -96,18 +86,28 @@ function pixelitRemove(hex, checkboxId) {
 function pixelitClearAll() {
     document.getElementById("images").innerHTML = "";
     pickedColors.clear();
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    if (typeof groups !== "undefined") { groups = []; colorGroups = new Map(); }
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(GROUPS_KEY);
+        localStorage.removeItem(COLOR_GROUPS_KEY);
+    } catch (e) {}
     renderPanel();
     document.dispatchEvent(new CustomEvent("pixelit:clearall"));
 }
 
 document.addEventListener("DOMContentLoaded", function() {
     loadFromStorage();
+    if (typeof loadGroups === "function") loadGroups();
     renderPanel();
 });
 
 document.addEventListener("pixelit:pick", function(e) {
     pickedColors.set(e.detail.hex, { hex: e.detail.hex, checkboxId: e.detail.checkboxId });
+    if (typeof activeGroupId !== "undefined" && activeGroupId) {
+        colorGroups.set(e.detail.hex, activeGroupId);
+        saveGroups();
+    }
     renderPanel();
 });
 

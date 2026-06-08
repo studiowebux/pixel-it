@@ -94,6 +94,7 @@ app.get("/", (c: Context) => {
   <script src="/js/panel.js"></script>
   <script src="/js/export.js"></script>
   <script src="/js/variations.js"></script>
+  <script src="/js/groups.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       htmx.on("#form", "htmx:xhr:progress", function(evt) {
@@ -139,6 +140,11 @@ app.get("/", (c: Context) => {
           <h3>My Palette</h3>
           <span id="palette-count" class="panel-count">(0)</span>
         </div>
+        <div id="active-group-banner" class="active-group-banner" style="display:none"></div>
+        <div class="new-group-row">
+          <input type="text" id="new-group-input" placeholder="Group name" onkeydown="if(event.key==='Enter'){pixelitCreateGroup();}" />
+          <button onclick="pixelitCreateGroup()">+ Group</button>
+        </div>
         <div id="palette-list">
           <p id="palette-empty" class="panel-empty">Upload an image and click colors to add them here.</p>
         </div>
@@ -151,16 +157,22 @@ app.get("/", (c: Context) => {
           <input type="number" id="var-degrees" value="5" min="1" max="30" onchange="pixelitUpdateVariationSettings()" />
         </div>
         <hr class="panel-divider" />
-        <button onclick="pixelitExportPNG()" class="full">Export PNG</button>
+        <button onclick="pixelitExportAllGroupsPNG()" class="full primary">Export all PNG</button>
+        <button onclick="pixelitExportPNG()" class="full">Export flat PNG</button>
+        <div class="export-row">
+          <button onclick="pixelitExportJSON()" class="export-btn">JSON</button>
+          <button onclick="pixelitExportCSV()" class="export-btn">CSV</button>
+          <button onclick="pixelitExportText()" class="export-btn">TXT</button>
+        </div>
         <button onclick="pixelitClearAll()" class="full muted">Clear all</button>
       </aside>
     </div>
   </div>
 
   <footer class="app-footer">
-    <span>Made by Studiowebux &copy; 2024</span>
+    <span>&copy; 2024&ndash;2026 <a href="https://studiowebux.com">Studiowebux</a></span>
     <span>Deno / Hono / Jimp / extract-colors / HTMX</span>
-    <a href="https://github.com/studiowebux/pixel-it">Github</a>
+    <span><a href="https://github.com/studiowebux/pixel-it">Github</a></span>
   </footer>
 </body>
 </html>`);
