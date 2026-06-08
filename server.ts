@@ -95,6 +95,7 @@ app.get("/", (c: Context) => {
   <script src="/js/export.js"></script>
   <script src="/js/variations.js"></script>
   <script src="/js/groups.js"></script>
+  <script src="/js/overlay.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       htmx.on("#form", "htmx:xhr:progress", function(evt) {
@@ -212,7 +213,10 @@ app.post("/upload", async (c: Context) => {
         "<div class='palette-section'>"
         + "<div class='section-header'><h2>Pixelate &times; " + size + "</h2>" + pickAllBtn("color-palette") + "</div>"
         + "<div class='output'>"
+        + "<div class='img-wrapper'>"
         + "<img src='data:image/png;base64" + pixelated + "' alt='Pixelate x" + size + "' />"
+        + "<canvas class='img-overlay'></canvas>"
+        + "</div>"
         + "<div class='color-palette'>" + renderSwatches(sortByHue(palette), "px" + size + "-" + (file as File).name) + "</div>"
         + "</div>"
         + "</div>"

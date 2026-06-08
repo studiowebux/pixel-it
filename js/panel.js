@@ -67,6 +67,7 @@ function pixelitHighlightColor(hex) {
     for (var i = 0; i < labels.length; i++) {
         labels[i].parentElement.classList.add("palette-highlight");
     }
+    if (typeof pixelitDrawOverlay === "function") pixelitDrawOverlay(hex);
 }
 
 function pixelitUnhighlightColor() {
@@ -74,6 +75,7 @@ function pixelitUnhighlightColor() {
     for (var i = 0; i < labels.length; i++) {
         labels[i].classList.remove("palette-highlight");
     }
+    if (typeof pixelitClearOverlay === "function") pixelitClearOverlay();
 }
 
 function pixelitToggleVariations(hex, varId) {
