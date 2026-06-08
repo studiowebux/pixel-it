@@ -9,6 +9,7 @@ const app = new Hono();
 
 // ── Static assets ──────────────────────────────────────────────────────────
 
+app.use("/", serveStatic({ path: "./index.html" }));
 app.use("/style.css", serveStatic({ root: "./" }));
 app.use("/js/*", serveStatic({ root: "./" }));
 
@@ -68,104 +69,6 @@ function renderSwatches(colors: {hex: string}[], prefix: string): string {
 }
 
 // ── Routes ─────────────────────────────────────────────────────────────────
-
-app.get("/", (c: Context) => {
-  return c.html(`<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pixel-it</title>
-  <link rel="stylesheet" href="/style.css" />
-  <script src="https://unpkg.com/htmx.org@2.0.2" integrity="sha384-Y7hw+L/jvKeWIRRkqWYfPcvVxHzVzn5REgzbawhxAuQGwX1XWe70vji+VSeHOThJ" crossorigin="anonymous"></script>
-  <script src="/js/toggle.js"></script>
-  <script src="/js/panel.js"></script>
-  <script src="/js/export.js"></script>
-  <script src="/js/variations.js"></script>
-  <script src="/js/groups.js"></script>
-  <script src="/js/overlay.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      htmx.on("#form", "htmx:xhr:progress", function(evt) {
-        document.getElementById("progress").setAttribute("value", (evt.detail.loaded / evt.detail.total) * 100);
-      });
-    });
-  </script>
-</head>
-<body>
-  <header class="app-header">
-    <h1>Pixel-it</h1>
-  </header>
-
-  <div class="app-body">
-    <div class="toolbar-card">
-      <form
-        id="form"
-        class="toolbar"
-        hx-encoding="multipart/form-data"
-        hx-post="/upload"
-        hx-target="#images"
-        hx-swap="beforeend"
-        hx-indicator="#indicator"
-        hx-on::after-request="this.reset()"
-      >
-        <input type="file" name="file" required />
-        <div class="extract-wrap">
-          <label for="maxColors">Extract</label>
-          <input type="number" id="maxColors" name="maxColors" min="1" placeholder="64" />
-          <span>colors</span>
-        </div>
-        <button type="submit" class="primary">Upload</button>
-      </form>
-      <div id="indicator" class="indicator">
-        <progress id="progress" value="0" max="100"></progress>
-      </div>
-    </div>
-
-    <div class="page-layout">
-      <div id="images"></div>
-      <aside id="palette-panel">
-        <div class="panel-header">
-          <h3>My Palette</h3>
-          <span id="palette-count" class="panel-count">(0)</span>
-        </div>
-        <div id="active-group-banner" class="active-group-banner" style="display:none"></div>
-        <div class="new-group-row">
-          <input type="text" id="new-group-input" placeholder="Group name" onkeydown="if(event.key==='Enter'){pixelitCreateGroup();}" />
-          <button onclick="pixelitCreateGroup()">+ Group</button>
-        </div>
-        <div id="palette-list">
-          <p id="palette-empty" class="panel-empty">Upload an image and click colors to add them here.</p>
-        </div>
-        <hr class="panel-divider" />
-        <div class="variation-settings">
-          <span class="variation-settings-label">Variations</span>
-          <label for="var-steps">Steps</label>
-          <input type="number" id="var-steps" value="4" min="1" max="12" onchange="pixelitUpdateVariationSettings()" />
-          <label for="var-degrees">Deg</label>
-          <input type="number" id="var-degrees" value="5" min="1" max="30" onchange="pixelitUpdateVariationSettings()" />
-        </div>
-        <hr class="panel-divider" />
-        <button onclick="pixelitExportAllGroupsPNG()" class="full primary">Export all PNG</button>
-        <button onclick="pixelitExportPNG()" class="full">Export flat PNG</button>
-        <div class="export-row">
-          <button onclick="pixelitExportJSON()" class="export-btn">JSON</button>
-          <button onclick="pixelitExportCSV()" class="export-btn">CSV</button>
-          <button onclick="pixelitExportText()" class="export-btn">TXT</button>
-        </div>
-        <button onclick="pixelitClearAll()" class="full muted">Clear all</button>
-      </aside>
-    </div>
-  </div>
-
-  <footer class="app-footer">
-    <span>&copy; 2024&ndash;2026 <a href="https://studiowebux.com">Studiowebux</a></span>
-    <span>Deno / Hono / Jimp / extract-colors / HTMX</span>
-    <span><a href="https://github.com/studiowebux/pixel-it">Github</a></span>
-  </footer>
-</body>
-</html>`);
-});
 
 app.post("/upload", async (c: Context) => {
   const body = await c.req.parseBody();
