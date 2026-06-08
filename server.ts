@@ -1,11 +1,13 @@
 // deno serve -A --watch server.ts
 import { Hono, type Context } from "jsr:@hono/hono@^4.6.3";
 import { serveStatic } from "jsr:@hono/hono/deno";
+import { logger } from "jsr:@hono/hono/logger";
 import { Jimp } from "npm:jimp@^1.6.0";
 import { extractColors } from "npm:extract-colors";
 import getPixels from "npm:get-pixels";
 
 const app = new Hono();
+app.use(logger());
 
 // ── Static assets ──────────────────────────────────────────────────────────
 
