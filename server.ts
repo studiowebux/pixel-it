@@ -1,5 +1,6 @@
 // deno serve -A --watch server.ts
 import { Hono, type Context } from "jsr:@hono/hono@^4.6.3";
+import { serveStatic } from "jsr:@hono/hono/deno";
 import { Jimp } from "npm:jimp@^1.6.0";
 import { extractColors } from "npm:extract-colors";
 import getPixels from "npm:get-pixels";
@@ -8,21 +9,8 @@ const app = new Hono();
 
 // ── Static assets ──────────────────────────────────────────────────────────
 
-app.get("/style.css", async (c: Context) => {
-  const css = await Deno.readTextFile(new URL("./style.css", import.meta.url));
-  return c.text(css, 200, { "Content-Type": "text/css" });
-});
-
-app.get("/js/:file", async (c: Context) => {
-  const file = c.req.param("file") ?? "";
-  if (!/^[\w-]+\.js$/.test(file)) return c.text("Not found", 404);
-  try {
-    const js = await Deno.readTextFile(new URL(`./js/${file}`, import.meta.url));
-    return c.text(js, 200, { "Content-Type": "application/javascript" });
-  } catch {
-    return c.text("Not found", 404);
-  }
-});
+app.use("/style.css", serveStatic({ root: "./" }));
+app.use("/js/*", serveStatic({ root: "./" }));
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
